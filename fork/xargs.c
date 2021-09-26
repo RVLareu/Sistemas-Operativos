@@ -12,6 +12,10 @@
 
 int main(int argc, char* argv[]) {
 
+    if (argc <= 1) {
+        pritnf("Faltan argumentos");
+        return 0;
+    }
     FILE *stream;
     char *buff = NULL;
     size_t len = 0;
