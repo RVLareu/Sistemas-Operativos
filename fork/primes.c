@@ -9,7 +9,7 @@ int
 main(int argc, char *argv[])
 {
 /////////// Leo el número a calcular //////////////
-    int n =atoi(argcv[1]);
+    int n =atoi(argv[1]);
 
     /////////// creo pipe a derecha //////////////
     int fds[2];
