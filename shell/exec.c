@@ -49,7 +49,17 @@ static void
 set_environ_vars(char **eargv, int eargc)
 {
 	// Your code here
-}
+	for (int i = 0; i < eargc; i ++) {
+	
+		char * key;
+		get_environ_key(eargv[i], key);
+		char * value;
+		get_environ_value(eargv[i], value, block_contains(eargv[i], '='));
+	
+		setenv(key, value, 1);
+		
+		}
+}	
 
 // opens the file in which the stdin/stdout/stderr
 // flow will be redirected, and returns
@@ -65,6 +75,8 @@ static int
 open_redir_fd(char *file, int flags)
 {
 	// Your code here
+	int fd = open(file, flags, 0644);
+	return fd;
 
 	return -1;
 }
@@ -85,47 +97,99 @@ exec_cmd(struct cmd *cmd)
 	struct pipecmd *p;
 
 	switch (cmd->type) {
-	case EXEC:
-		// spawns a command
-		//
-		// Your code here
-		printf("Commands are not yet implemented\n");
-		_exit(-1);
-		break;
+		case EXEC:
 
-	case BACK: {
-		// runs a command in background
-		//
-		// Your code here
-		printf("Background process are not yet implemented\n");
-		_exit(-1);
-		break;
-	}
+			e =  (struct execcmd *) cmd;
+			set_environ_vars(e->eargv, e->eargc);
+			execvp(e->argv[0], e->argv);
+			_exit(-1);
+			break;
 
-	case REDIR: {
-		// changes the input/output/stderr flow
-		//
-		// To check if a redirection has to be performed
-		// verify if file name's length (in the execcmd struct)
-		// is greater than zero
-		//
-		// Your code here
-		printf("Redirections are not yet implemented\n");
-		_exit(-1);
-		break;
-	}
+		case BACK: {
 
-	case PIPE: {
-		// pipes two commands
-		//
-		// Your code here
-		printf("Pipes are not yet implemented\n");
+			b = (struct backcmd *) cmd;
+			e = (struct execcmd *) b->c;
+			execvp(e->argv[0], e->argv);
+			_exit(-1);
+			break;
+		}
 
-		// free the memory allocated
-		// for the pipe tree structure
-		free_command(parsed_pipe);
+		case REDIR: {
 
-		break;
-	}
+			r = (struct execcmd *) cmd;
+			int fd_out;
+			int fd_in;
+			int fd_err;
+			if (strlen(r->out_file) > 0) {
+				fd_out = open_redir_fd(r->out_file, O_WRONLY | O_CREAT | S_IWUSR | S_IRUSR);
+				dup2(fd_out, 1);
+				close(fd_out);
+				
+			} if (strlen(r->in_file) > 0) {
+				fd_in = open_redir_fd(r->in_file, O_RDONLY);
+				dup2(fd_in, 0);
+				close(fd_in);
+				
+			} if (strlen(r->err_file) > 0) {
+				if (strstr("&1", r->err_file) != NULL) {
+					dup2(1,2);
+				} else {
+					fd_err = open_redir_fd(r->err_file, O_WRONLY | O_CREAT | S_IWUSR | S_IRUSR);
+					dup2(fd_err, 2);
+					close(fd_err);
+				}
+				
+			}
+			if (fd_out < 0 && fd_in < 0 && fd_err < 0) { //todos abrieron mal
+				_exit(-1);
+			}
+			execvp(r->argv[0], r->argv);
+			
+			break;
+		}
+
+		case PIPE: {
+
+			p = (struct pipecmd *) cmd;
+			struct execcmd *p_right = (struct execcmd *) p->rightcmd;
+			struct execcmd *p_left = (struct execcmd *) p->leftcmd;
+			int fds[2];
+			int err = pipe(fds);
+			if (err < 0) {
+				_exit(-1);
+			}
+			
+
+			int pid_izq = fork();
+
+			if (pid_izq == 0) {
+				close(fds[1]);
+				dup2(fds[0],0);
+				close(fds[0]);
+				execvp(p_right->argv[0], p_right->argv);
+			} 
+			
+			int pid_der = fork();
+			if (pid_der == 0) {
+				close(fds[0]);
+				dup2(fds[1],1);
+				close(fds[1]);
+				execvp(p_left->argv[0], p_left->argv);
+			}
+			free_command(parsed_pipe);
+			close(fds[0]);
+			close(fds[1]);
+			waitpid(pid_der, NULL, 0);
+			waitpid(pid_izq, NULL, 0);
+			exit(0);
+
+			
+
+			// free the memory allocated
+			// for the pipe tree structure
+			
+		
+			break;
+		}
 	}
 }

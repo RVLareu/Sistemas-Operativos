@@ -1,5 +1,6 @@
 #include "parsing.h"
-
+extern int status;
+		
 // parses an argument of the command stream input
 static char *
 get_token(char *buf, int idx)
@@ -102,7 +103,23 @@ static char *
 expand_environ_var(char *arg)
 {
 	// Your code here
+	if (arg[0] == '$') {
+	
+		if (arg[1] == '?') {
+			char aux[sizeof(status)];
+			sprintf(aux, "%d", status);
+			strcpy(arg, aux);
+		} else {
+			char *env = getenv(&arg[1]);
+			if (env == NULL) {
+				env = "";
+			} else if (sizeof(env) > sizeof(arg)) {
+				arg = realloc(arg, sizeof(env));
 
+			}
+			strcpy(arg, env);
+		}
+	}
 	return arg;
 }
 
@@ -185,7 +202,7 @@ struct cmd *
 parse_line(char *buf)
 {
 	struct cmd *r, *l;
-
+	
 	char *right = split_line(buf, '|');
 
 	l = parse_cmd(buf);
