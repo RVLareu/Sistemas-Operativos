@@ -23,8 +23,8 @@ La llamada a *exec(3)* puede fallar, de hacerlo devuelven el valor -1 y *errno* 
 
 ### Variables de entorno adicionales
 
-Es necesario hacerlo luego de la llamada *fork* para que las variables del proceso padre no se vean afectadas. El hijo copia las variables del padre y luego se las modifica. Los procesos hijos toman sus variables de entorno de la variable *environ* del proceso padre. Si se hiciera previo al *fork*, se estarían modificando las variables de entorno de la shell. 
-
+Es necesario hacerlo luego de la llamada *fork* para que las variables del proceso padre no se vean afectadas. El hijo copia las variables del padre y luego se las modifica. Los procesos hijos toman sus variables de entorno de la variable *environ* del proceso padre. Si se hiciera previo al *fork*, se estarían modificando las variables de entorno de la shell.
+*setenv* agrega o modifica las variables del entorno, al llamar a una función *exec* terminada en **e** lo que ocurre es que se le indica todo el entorno, por lo que habría que pasarle el entorno actual sumado a las modificaciones. Si se pasaran solo las modificaciones (como se hace en *setenv*), se perderían las variables de entorno que se tenían anteriormente. En conclusión, con *setenv* agrego/modifico variables del entorno que ya se tenía, al hacer *exec* terminada en e se van a tener únicamente las variables que se pasen por parámetro. Si se quisiera cambiar la implementación habría que copiar las variables de entorno actuales, modificar o agregar a ese conjunto las deseadas y luego llamar a *exec* terminada en e.
 ---
 
 ### Procesos en segundo plano
