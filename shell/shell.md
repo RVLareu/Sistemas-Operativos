@@ -35,7 +35,7 @@ Para la implementación de procesos en segundo plano se los identifica por la pr
 
 ### Flujo estándar
 
-2>&1 indica que se debe redireccionar el *file descriptor* 2 al 1. El equivalente sería decir que la salida de *stderr* sea por *stdout*. Si en nuestra terminal se hiciera 2>1 (sin *&*) se estaria redireccionando la salida de *stderr* al archivo con nombre 1.
+2>&1 indica que se debe redireccionar el *file descriptor* 2 al 1. El equivalente sería decir que la salida de *stderr* sea por *stdout*. Si en nuestra terminal se hiciera 2>1 (sin *&*) se estaria redireccionando la salida de *stderr* al archivo con nombre 1. En el primer caso tanto el error como la salida exitosa quedan en el archivo de salida. Si invierto el orden primero el error sale por salida estándar, imprimiendose en pantalla y luego el resultado exitoso se escribe en el archivo indicado.
 
 ![](/salida_error.png)
 
@@ -45,6 +45,8 @@ Para la implementación de procesos en segundo plano se los identifica por la pr
 ---
 
 ### Tuberías simples (pipes)
+
+La shell retorna el *exit code* del último comando ejecutado. En el caso de bash, posee una variable (arreglo) que permite recuperar los *exit code* de los comandos intermedios, llamada PIPESTATUS 
 
 ---
 
