@@ -57,7 +57,7 @@ run_cmd(char *cmd)
 		waitpid(p, &status, WNOHANG);
 	} else {
 		// waits for the process to finish
-		struct execcmd * r = (struct execcmd *) parsed;
+		//struct execcmd * r = (struct execcmd *) parsed;
 		waitpid(p, &status, 0);
 	}
 	print_status_info(parsed);

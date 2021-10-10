@@ -51,9 +51,9 @@ set_environ_vars(char **eargv, int eargc)
 	// Your code here
 	for (int i = 0; i < eargc; i ++) {
 	
-		char * key;
+		char key[2048];
 		get_environ_key(eargv[i], key);
-		char * value;
+		char value[2048];
 		get_environ_value(eargv[i], value, block_contains(eargv[i], '='));
 	
 		setenv(key, value, 1);
@@ -115,18 +115,18 @@ exec_cmd(struct cmd *cmd)
 		}
 
 		case REDIR: {
-
+			
 			r = (struct execcmd *) cmd;
 			int fd_out;
 			int fd_in;
 			int fd_err;
 			if (strlen(r->out_file) > 0) {
-				fd_out = open_redir_fd(r->out_file, O_WRONLY | O_CREAT | S_IWUSR | S_IRUSR);
+				fd_out = open_redir_fd(r->out_file, O_RDWR | O_CREAT | S_IWUSR | S_IRUSR);
 				dup2(fd_out, 1);
 				close(fd_out);
 				
 			} if (strlen(r->in_file) > 0) {
-				fd_in = open_redir_fd(r->in_file, O_RDONLY);
+				fd_in = open_redir_fd(r->in_file, O_RDWR);
 				dup2(fd_in, 0);
 				close(fd_in);
 				
@@ -134,25 +134,23 @@ exec_cmd(struct cmd *cmd)
 				if (strstr("&1", r->err_file) != NULL) {
 					dup2(1,2);
 				} else {
-					fd_err = open_redir_fd(r->err_file, O_WRONLY | O_CREAT | S_IWUSR | S_IRUSR);
+					fd_err = open_redir_fd(r->err_file, O_RDWR | O_CREAT | S_IWUSR | S_IRUSR);
 					dup2(fd_err, 2);
 					close(fd_err);
 				}
-				
 			}
-			if (fd_out < 0 && fd_in < 0 && fd_err < 0) { //todos abrieron mal
+			if (fd_out < 0 && fd_in < 0 && fd_err < 0) {
 				_exit(-1);
 			}
+			set_environ_vars(r->eargv, r->eargc);
 			execvp(r->argv[0], r->argv);
-			
+			_exit(-1);
 			break;
 		}
 
 		case PIPE: {
 
 			p = (struct pipecmd *) cmd;
-			struct execcmd *p_right = (struct execcmd *) p->rightcmd;
-			struct execcmd *p_left = (struct execcmd *) p->leftcmd;
 			int fds[2];
 			int err = pipe(fds);
 			if (err < 0) {
@@ -161,35 +159,45 @@ exec_cmd(struct cmd *cmd)
 			
 
 			int pid_izq = fork();
-
+			if (pid_izq < 0) {
+				perror("fork");
+			}
 			if (pid_izq == 0) {
-				close(fds[1]);
-				dup2(fds[0],0);
-				close(fds[0]);
-				execvp(p_right->argv[0], p_right->argv);
-			} 
-			
-			int pid_der = fork();
-			if (pid_der == 0) {
 				close(fds[0]);
 				dup2(fds[1],1);
 				close(fds[1]);
-				execvp(p_left->argv[0], p_left->argv);
+				exec_cmd(p->leftcmd);
+			} 
+			
+			int pid_der = fork();
+			if (pid_der < 0) {
+				perror("fork");
 			}
-			free_command(parsed_pipe);
+			if (pid_der == 0) {
+				close(fds[1]);
+				dup2(fds[0],0);
+				close(fds[0]);
+				exec_cmd(p->rightcmd);
+
+			}
+			
 			close(fds[0]);
 			close(fds[1]);
-			waitpid(pid_der, NULL, 0);
 			waitpid(pid_izq, NULL, 0);
+			waitpid(pid_der, NULL, 0);
+			
+
+			free_command(parsed_pipe);
 			exit(0);
-
-			
-
-			// free the memory allocated
-			// for the pipe tree structure
-			
 		
 			break;
 		}
 	}
+}
+
+
+// 
+
+void pipe_f() {
+	
 }

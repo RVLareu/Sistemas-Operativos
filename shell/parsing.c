@@ -202,11 +202,15 @@ struct cmd *
 parse_line(char *buf)
 {
 	struct cmd *r, *l;
-	
 	char *right = split_line(buf, '|');
-
+	
 	l = parse_cmd(buf);
-	r = parse_cmd(right);
-
+	if (block_contains(right, '|') > 0) {
+		r = parse_line(right);
+	} else {
+		r = parse_cmd(right);
+		
+	}
 	return pipe_cmd_create(l, r);
+	
 }
